@@ -3,29 +3,37 @@ on:
     branches:
       - main
 
-name: "Build package"
+name: "🚀 Build package and publish"
+
+env:
+  NODE_ENV: development
+
 jobs:
-  build_package:
+  build:
+    name: 🧱 Build & release
     runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3
       
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '17'
-      
-      - run: npm i --save-dev
-      
-      - run: npm run build
+      - name: 📚 Install Pnpm
+        uses: pnpm/action-setup@v2.2.2
 
-      - name: 📝 Creating .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
-          EOF
+      - name: 📚 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      
+      - name: ⛭ Setup Pnpm github registry
+        run: pnpm config set @metalizzsas:registry=https://npm.pkg.github.com //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 📚 Install Node dependencies
+        run: pnpm install
 
-      - run: npm publish
+      - name: 🧱 Run build scripts on all packages
+        run: pnpm run build
+
+      - run: pnpm publish

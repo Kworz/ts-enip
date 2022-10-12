@@ -1,6 +1,6 @@
 {
   "name": "@metalizzsas/ts-enip",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,7 +15,7 @@
     "url": "git+https://github.com/metalizzsas/ts-enip.git"
   },
   "keywords": ["ethernet-ip", "rockwell", "control-logix", "fieldbus", "CIP", "industrial bus"],
-  "author": "Metalizz",
+  "author": "@metalizzsas",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/metalizzsas/ts-enip/issues"
@@ -27,5 +27,6 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
-  }
+  },
+  "packageManager": "pnpm@7.13.0"
 }
