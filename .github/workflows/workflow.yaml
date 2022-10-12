@@ -36,4 +36,4 @@ jobs:
       - name: 🧱 Run build scripts on all packages
         run: pnpm run build
 
-      - run: pnpm publish
+      - run: pnpm publish --no-git-checks
