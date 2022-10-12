@@ -2,20 +2,28 @@ on:
   push:
     branches:
       - main
+
 name: "Build package"
 jobs:
   build_package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
-      - uses: actions/setup-node@v2
+      
+      - uses: actions/setup-node@v3
         with:
-          node-version: '14'
-      - run: npm i 
+          node-version: '17'
+      
+      - run: npm i --save-dev
+      
       - run: npm run build
-      - uses: EndBug/add-and-commit@v8
-        with:
-          new_branch: 'build'
-          default_author: github_actions
-          push: 'origin build --force'
-          add: "./dist --force"
+
+      - name: 📝 Creating .npmrc
+        run: |
+          cat << EOF > "$HOME/.npmrc"
+            //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: npm publish
