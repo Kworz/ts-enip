@@ -7,6 +7,8 @@ name: "Build package"
 jobs:
   build_package:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@main
       
