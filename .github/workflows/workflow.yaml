@@ -8,12 +8,14 @@ name: "🚀 Build package and publish"
 env:
   NODE_ENV: development
 
+permissions:
+      packages: write
+
 jobs:
   build:
+    if: github.repository == 'metalizzsas/ts-enip' # Disable action on forks
     name: 🧱 Build & release
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
     steps:
       - uses: actions/checkout@v3
       
