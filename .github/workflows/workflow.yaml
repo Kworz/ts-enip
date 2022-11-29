@@ -3,17 +3,14 @@ on:
     branches:
       - main
 
-name: "🚀 Build package and publish"
+name: "🚀 Build package and publish to npm"
 
 env:
   NODE_ENV: development
 
-permissions:
-      packages: write
-
 jobs:
   build:
-    if: github.repository == 'metalizzsas/ts-enip' # Disable action on forks
+    if: github.repository == 'kworz/ts-enip' # Disable action on forks
     name: 🧱 Build & release
     runs-on: ubuntu-latest
     steps:
@@ -28,9 +25,9 @@ jobs:
           node-version: 18.x
       
       - name: ⛭ Setup Pnpm github registry
-        run: pnpm config set @metalizzsas:registry=https://npm.pkg.github.com //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
+        run: pnpm config set //registry.npmjs.org/:_authToken=$GITHUB_TOKEN
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           
       - name: 📚 Install Node dependencies
         run: pnpm install
