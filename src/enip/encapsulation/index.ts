@@ -243,14 +243,14 @@ export namespace Encapsulation
      * Creates a register session packet
      * @returns register Session packet
      */
-    export function registerSession(): Buffer
+    export function registerSession(sessionID = 0x00): Buffer
     {
         const cmdBuf = Buffer.alloc(4);
         cmdBuf.writeUInt16LE(0x01, 0); // Protocol Version (Required to be 1)
         cmdBuf.writeUInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
     
         // Build Register Session Buffer and return it
-        return Header.build(Commands.RegisterSession, 0x00, cmdBuf);
+        return Header.build(Commands.RegisterSession, sessionID, cmdBuf);
     };
     
     /**

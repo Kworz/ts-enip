@@ -1,41 +1,12 @@
 import { Socket } from "net";
 import { EventEmitter } from "stream";
 import { Encapsulation } from "./encapsulation";
+import { ENIPEventEmitter } from "./events";
+import { ENIPState } from "./states";
 
 export namespace ENIP
-{
-    type ENIPState = {
-        TCPState: States
-        session: { id: number, state: States },
-        connection: { id: number, seq_num: number, state: States },
-        error: { code: number, msg: string },
-    }
-    
-    enum States {
-        UNCONNECTED = "unconnected",
-        ESTABLISHED = "established",
-        ESTABLISHING = "establishing",
-    }
-    
+{    
     const EIP_PORT = 44818;
-
-    interface ENIPEvents
-    {
-        "Session Registration Failed": (error: {code: number, msg: string}) => void;
-        "Session Registered": (sessionid: number) => void;
-        "Session Unregistered": () => void;
-        "SendRRData Received": (data: Encapsulation.CPF.dataItem[]) => void;
-        "SendUnitData Received": (data: Encapsulation.CPF.dataItem[]) => void;
-        "Unhandled Encapsulated Command Received": (data: Encapsulation.Header.ParsedHeader) => void;
-        "close": () => void;
-    }
-
-    declare interface ENIPEventEmitter extends EventEmitter
-    {
-        on<U extends keyof ENIPEvents>(event: U, listener: ENIPEvents[U]): this;
-        once<U extends keyof ENIPEvents>(event: U, listener: ENIPEvents[U]): this;
-        emit<U extends keyof ENIPEvents>(event: U, ...args: Parameters<ENIPEvents[U]>): boolean
-    }
 
     /**
      * Low Level Ethernet/IP
@@ -43,9 +14,9 @@ export namespace ENIP
     export class SocketController {
     
         state: ENIPState = {
-            TCPState: States.UNCONNECTED,
-            session: { id: 0, state: States.UNCONNECTED },
-            connection: { id: 0, state: States.UNCONNECTED, seq_num: 0 },
+            TCPState: "unconnected",
+            session: { id: 0, state: "unconnected" },
+            connection: { id: 0, state: "unconnected", seq_num: 0 },
             error: { code: 0, msg: '' }
         };
     
@@ -64,8 +35,8 @@ export namespace ENIP
          */
         async connect(IP_ADDR: string, timeoutSP = 10000): Promise<number | undefined> {
     
-            this.state.session.state = States.ESTABLISHING;
-            this.state.TCPState = States.ESTABLISHING;
+            this.state.session.state = "establishing";
+            this.state.TCPState = "establishing";
     
             /**
              * Connects to the controller using a raw TCP Socket 
@@ -75,18 +46,18 @@ export namespace ENIP
                 this.socket.connect(EIP_PORT, IP_ADDR);
     
                 this.socket.once("connect", () => {
-                    this.state.TCPState = States.ESTABLISHED;
+                    this.state.TCPState = "established";
                     resolve(true);
                 });
     
                 this.socket.once("error", () => () => {
                     resolve(false)
-                    this.state.TCPState = States.UNCONNECTED;
+                    this.state.TCPState = "unconnected";
                 });
             });
     
             //@ts-ignore
-            if (connectResult === true && this.state.TCPState === States.ESTABLISHED) {
+            if (connectResult === true && this.state.TCPState === "established") {
                 //Adding Sockets events
                 this.socket.on("data", (data: Buffer) => { this.handleData(data); });
                 this.socket.once("close", (hadError: boolean) => { this.handleClose(hadError); this.events.emit("close") });
@@ -98,7 +69,7 @@ export namespace ENIP
                     setTimeout(() => resolve(undefined), timeoutSP);
     
                     this.events.on("Session Registered", (sessionid: number) => {
-                        this.state.session.state = States.ESTABLISHED;
+                        this.state.session.state = "established";
                         resolve(sessionid);
                     });
                     this.events.on("Session Registration Failed", error => {
@@ -115,8 +86,8 @@ export namespace ENIP
                 return sessionID;
             }
             else {
-                this.state.TCPState = States.UNCONNECTED;
-                this.state.session.state = States.UNCONNECTED;
+                this.state.TCPState = "unconnected";
+                this.state.session.state = "unconnected";
                 this.state.error.msg = "Failed to connect to socket";
                 return 0;
             }
@@ -127,11 +98,11 @@ export namespace ENIP
          * or a Transport Class 1 Datagram
          */
         async write(data: Buffer, connected = false, timeout?: number): Promise<boolean> {
-            if (this.state.session.state = States.ESTABLISHED)
+            if (this.state.session.state = "established")
             {
                 if (connected === true) 
                 {
-                    if (this.state.connection.state === States.ESTABLISHED) 
+                    if (this.state.connection.state === "established") 
                     {
                         (this.state.connection.seq_num > 0xffff) ? this.state.connection.seq_num = 0 : this.state.connection.seq_num++;
                     }
@@ -175,9 +146,9 @@ export namespace ENIP
          * @deprecated
          */
         destroy(_error?: Error) {
-            if (this.state.session.id != 0 && this.state.session.state === States.ESTABLISHED && this.state.TCPState !== States.UNCONNECTED) {
+            if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
                 this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
-                    this.state.session.state = States.UNCONNECTED;
+                    this.state.session.state = "unconnected";
                 });
             }
         }
@@ -187,7 +158,7 @@ export namespace ENIP
          */
         close()
         {
-            if (this.state.session.id != 0 && this.state.session.state === States.ESTABLISHED && this.state.TCPState !== States.UNCONNECTED) {
+            if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
                 this.socket.write(Encapsulation.unregisterSession(this.state.session.id));
             }
         }
@@ -214,7 +185,7 @@ export namespace ENIP
     
                 switch (commandCode) {
                     case Encapsulation.Commands.RegisterSession: {
-                        this.state.session.state = States.ESTABLISHED;
+                        this.state.session.state = "established";
                         this.state.session.id = encapsulatedData.session;
                         this.events.emit("Session Registered", this.state.session.id);
                         break;
@@ -222,7 +193,7 @@ export namespace ENIP
     
                     case Encapsulation.Commands.UnregisterSession: {
     
-                        this.state.session.state = States.UNCONNECTED;
+                        this.state.session.state = "unconnected";
                         this.events.emit("Session Unregistered");
                         break;
                     }
@@ -253,8 +224,8 @@ export namespace ENIP
          * Handle socket close
          */
         private handleClose(_hadError: boolean) {
-            this.state.session.state = States.UNCONNECTED;
-            this.state.TCPState = States.UNCONNECTED;
+            this.state.session.state = "unconnected";
+            this.state.TCPState = "unconnected";
             this.socket.removeAllListeners("data");
             this.socket.removeAllListeners("close");
             this.socket.removeAllListeners("error");
