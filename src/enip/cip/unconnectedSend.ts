@@ -1,5 +1,5 @@
 import { MessageRouter } from "./messageRouter";
-import { ConnectionManager } from "./connectionManager"
+import type { ConnectionManager } from "./connectionManager"
 
 
 const UNCONNECTED_SEND_SERVICE = 0x52;

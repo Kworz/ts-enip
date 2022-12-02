@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/kworz/ts-enip#readme",
   "devDependencies": {
+    "@changesets/cli": "^2.25.2",
     "@types/node": "^17.0.45",
     "nodemon": "^2.0.20",
     "ts-node": "^10.9.1",

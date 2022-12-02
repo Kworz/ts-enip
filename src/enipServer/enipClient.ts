@@ -1,12 +1,18 @@
-import { Socket } from "net";
 import { EventEmitter } from "stream";
 import { MessageRouter } from "../enip/cip/messageRouter";
 import { CIP, CIPPacket } from "../enip/cip/path";
 import { Encapsulation } from "../enip/encapsulation";
-import { ENIPEventEmitter } from "../enip/events";
-import { ENIPState } from "../enip/states";
+import type { Socket } from "net";
+import type { ENIPEventEmitter } from "../enip/events";
+import type { ENIPState } from "../enip/states";
 
-export type ENIPDataVector = Record<number,(data: CIPPacket) => number>;
+export type ENIPDataVector = Record<number, VectorFunction>;
+
+/** 
+ * This function handles packet of its assignated service
+ * @returns if it returns undefined, the client will send an error packet
+ */
+type VectorFunction = (data: CIPPacket) => Buffer | undefined;
 
 export class ENIPClient {
 
@@ -49,30 +55,34 @@ export class ENIPClient {
         const vectorFunction = this.dataVector[packet.service];
 
         if(vectorFunction === undefined)
-            throw Error("Vector function not defined");
+            throw Error("Vector function undefined");
 
         const dataToSend = vectorFunction(packet);
+
+        if(dataToSend === undefined)
+        {
+            // Set service to Reply
+            const mask = 0x80;
+            packet.service |= mask;
+
+            const MR = MessageRouter.build(packet.service, Buffer.from([0x04]), Buffer.alloc(0));
+
+            this.write(MR, false, 50);
+            return;
+        }
         
+        // TODO: this should be simplyfied using vector functions
+
         switch(packet.service)
         {
-            case 0x0E: {
-
-                const data = Buffer.alloc(4);
-                data.writeUInt32LE(dataToSend);
-                
-                const MR = MessageRouter.build(0x8E, Buffer.from([0x00]), data);
+            case 0x0E: {                
+                const MR = MessageRouter.build(0x8E, Buffer.from([0x00]), dataToSend);
 
                 this.write(MR, false, 50);
                 break;
             }
             case 0x10: {
-
-                const returnedData = vectorFunction(packet);
-
-                const data = Buffer.alloc(4);
-                data.writeUInt32LE(returnedData);
-
-                const MR = MessageRouter.build(0x90, Buffer.from([0x00]), data);
+                const MR = MessageRouter.build(0x90, Buffer.from([0x00]), dataToSend);
 
                 this.write(MR, false, 50);
                 break;
@@ -88,68 +98,42 @@ export class ENIPClient {
      * or a Transport Class 1 Datagram
      */
     async write(data: Buffer, connected = false, timeout?: number): Promise<boolean> {
-        if (this.state.session.state = "established")
+        if (this.state.session.state != "established")
+            return false;
+
+        if(this.state.session.id === undefined)
+            return false;
+
+        if (connected === true) 
         {
-            if (connected === true) 
+            if (this.state.connection.state === "established") 
             {
-                if (this.state.connection.state === "established") 
-                {
-                    (this.state.connection.seq_num > 0xffff) ? this.state.connection.seq_num = 0 : this.state.connection.seq_num++;
-                }
-                else
-                {
-                    throw new Error("Connected message request, but no connection established. Forgot forwardOpen?");
-                }
-            }
-
-            if (this.state.session.id)
-            {
-                //If the packet should be connected, send UnitData otherwise send RRData
-                const packet = (connected) ? Encapsulation.sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : Encapsulation.sendRRData(this.state.session.id, data, timeout ?? 10);
-                const write = await new Promise<boolean>((resolve, reject) => {
-                    
-                    this.socket.write(packet, (err?: Error) => {
-
-                        //timeout rejection
-                        setTimeout(() => reject(false), timeout ?? 10000);
-
-                        resolve(err === undefined ? true : false);
-                    });
-                });
-                
-                return write;
+                let { seq_num } = this.state.connection;
+                (seq_num > 0xffff) ? seq_num = 0 : seq_num++;
             }
             else
             {
-                return false;
+                throw new Error("Connected message request, but no connection established. Forgot forwardOpen?");
             }
         }
-        else
-        {
-            return false;
-        }
-    }
 
-    /**
-     * Sends Unregister Session Command and Destroys Underlying TCP Socket
-     * @deprecated
-     */
-    destroy(_error?: Error) {
-        if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
-                this.state.session.state = "unconnected";
+        //If the packet should be connected, send UnitData otherwise send RRData
+        const packet = (connected) ? 
+            Encapsulation.sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : 
+            Encapsulation.sendRRData(this.state.session.id, data, timeout ?? 10);
+
+        const write = await new Promise<boolean>((resolve, reject) => {
+            
+            this.socket.write(packet, (err?: Error) => {
+
+                //timeout rejection
+                setTimeout(() => reject(false), timeout ?? 10000);
+
+                resolve(err === undefined ? true : false);
             });
-        }
-    }
-
-    /**
-     * Sends an UnregisterSession command
-     */
-    close()
-    {
-        if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(Encapsulation.unregisterSession(this.state.session.id));
-        }
+        });
+        
+        return write;
     }
 
     /**
@@ -212,6 +196,27 @@ export class ENIPClient {
                         console.log(encapsulatedData);
                     }
             }
+        }
+    }
+    /**
+     * Sends Unregister Session Command and Destroys Underlying TCP Socket
+     * @deprecated
+     */
+    destroy(_error?: Error) {
+        if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
+            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
+                this.state.session.state = "unconnected";
+            });
+        }
+    }
+
+    /**
+     * Sends an UnregisterSession command
+     */
+    close()
+    {
+        if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
+            this.socket.write(Encapsulation.unregisterSession(this.state.session.id));
         }
     }
 

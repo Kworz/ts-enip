@@ -1,5 +1,5 @@
-import { EventEmitter } from "stream";
-import { Encapsulation } from "../encapsulation";
+import type { EventEmitter } from "stream";
+import type { Encapsulation } from "../encapsulation";
 
 export declare interface ENIPEventEmitter extends EventEmitter
 {
