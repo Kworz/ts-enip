@@ -1,17 +1,29 @@
 # ts-enip – TypeScript EtherNet/IP™
 
-[![🚀 Build package and publish to npm](https://github.com/Kworz/ts-enip/actions/workflows/workflow.yaml/badge.svg)](https://github.com/Kworz/ts-enip/actions/workflows/workflow.yaml)
-[![npm version](https://badge.fury.io/js/enip-ts.svg)](https://badge.fury.io/js/enip-ts)
+![🚀 Build package and publish to npm](https://github.com/Kworz/ts-enip/actions/workflows/workflow.yaml/badge.svg)
+![npm](https://img.shields.io/npm/v/enip-ts)
 
 TypeScript implementation of the Ethernet/IP™ protocol. This implementation is less complete.
 
 Based on the work of [cmseaton42/node-ethernet-ip](https://github.com/cmseaton42/node-ethernet-ip) and [SerafinTech/ST-node-ethernet-ip](https://github.com/SerafinTech/ST-node-ethernet-ip).
+
+## Contributions
+
+Contributions will be highly appreciated 👍. This package use changesets for its versioning. Create a Changeset using
+
+```bash
+npx changeset
+pnpm exec changeset
+```
+
+Sepcify what have changed, commit to your branch and create a pull request on this repo 📝. Changeset bot will detect changesets.
 
 ## Building
 
 Run PNPM to build this package.
 
 ```bash
+npm run build
 pnpm run build
 ```
 
@@ -21,6 +33,7 @@ Install this package with
 
 ```bash
 npm install enip-ts
+pnpm install enip-ts
 ```
 
 ## Using the library
@@ -57,30 +70,29 @@ For server side, only services 0x0E & 0x10 are supported.
 
 ```typescript
 
-    const actualData = Buffer.alloc(4);
-    actualData.writeUInt32BE(0xF0F0F0F0);
+    const actualData = Buffer.alloc(4, 0xF0);
     
     const vector: ENIPDataVector = {
         0x0E: (data) => {
             if(data.path.class == 4 && data.path.instance == 150 && data.path.attribute == 3)
-                return actualData.readUInt32LE();
+                return actualData;
             else
-                return 0;
+                return;
         },
         0x10: (data) => {
             if(data.path.class == 4 && data.path.instance == 150 && data.path.attribute == 3 && data.data)
             {
-                actualData.writeUint32LE(data.data.readUint32LE());
-                console.log(actualData);
-                return actualData.readUInt32LE();
+                data.data.copy(actualData);
+                return actualData;
             }
             else
-                return 0;
+                return;
         }
     }
     
-    const server = new ENIPServer.SocketController(vector);
+    const server = new ENIPServer(vector);
     
-    server.listen("0.0.0.0");
+    // Server will listen on Default enip port 44818
+    server.listen();
 
 ```

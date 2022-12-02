@@ -1,8 +1,8 @@
 import { ENIP } from "../enip";
 import { MessageRouter } from "../enip/cip/messageRouter";
-import { Encapsulation } from "../enip/encapsulation";
 import { ENIPServer } from "../enipServer";
-import { ENIPDataVector } from "../enipServer/enipClient";
+import type { Encapsulation } from "../enip/encapsulation";
+import type { ENIPDataVector } from "../enipServer/enipClient";
 
 const local = true;
 
@@ -14,25 +14,24 @@ if(local)
     const vector: ENIPDataVector = {
         0x0E: (data) => {
             if(data.path.class == 4 && data.path.instance == 150 && data.path.attribute == 3)
-                return actualData.readUInt32LE();
+                return actualData;
             else
-                return 0;
+                return;
         },
         0x10: (data) => {
             if(data.path.class == 4 && data.path.instance == 150 && data.path.attribute == 3 && data.data)
             {
-                actualData.writeUint32LE(data.data.readUint32LE());
-                console.log(actualData);
-                return actualData.readUInt32LE();
+                data.data.copy(actualData);
+                return actualData;
             }
             else
-                return 0;
+                return;
         }
     }
     
-    const server = new ENIPServer.SocketController(vector);
+    const server = new ENIPServer(vector);
     
-    server.listen("0.0.0.0");
+    server.listen();
     
     const controller = new ENIP.SocketController();
     
@@ -42,7 +41,7 @@ if(local)
             return;
         
         //Path for ethernet ip protocol
-        const idPath = Buffer.from([0x20, 0x04, 0x24, 0x96, 0x30, 0x03]);
+        const idPath = Buffer.from([0x20, 0x04, 0x24, 0x96, 0x30, 0x02]);
         
         //Message router packet
         const MR = MessageRouter.build(0x0E, idPath, Buffer.alloc(0));

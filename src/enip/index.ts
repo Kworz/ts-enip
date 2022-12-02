@@ -1,8 +1,8 @@
 import { Socket } from "net";
 import { EventEmitter } from "stream";
 import { Encapsulation } from "./encapsulation";
-import { ENIPEventEmitter } from "./events";
-import { ENIPState } from "./states";
+import type { ENIPEventEmitter } from "./events";
+import type { ENIPState } from "./states";
 
 export namespace ENIP
 {    
