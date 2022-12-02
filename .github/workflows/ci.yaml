@@ -1,0 +1,31 @@
+on:
+  pull_request:
+    branches:
+      - main
+
+name: "🚀 CI"
+
+env:
+  NODE_ENV: development
+
+jobs:
+  build:
+    if: github.repository == 'kworz/ts-enip' # Disable action on forks
+    name: 🧱 CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 📚 Install Pnpm
+        uses: pnpm/action-setup@v2.2.2
+
+      - name: 📚 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      
+      - name: 📚 Install Node dependencies
+        run: pnpm install
+
+      - name: 🧱 Run build scripts on all packages
+        run: pnpm run build
