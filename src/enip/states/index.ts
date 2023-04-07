@@ -5,4 +5,4 @@ export type ENIPState = {
     error: { code: number, msg: string },
 }
 
-type States = "unconnected" | "established" | "establishing";
+export type States = "unconnected" | "established" | "establishing";

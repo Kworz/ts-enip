@@ -32,8 +32,10 @@ export namespace ENIP
         /**
          * Initializes Session with Desired IP Address or FQDN
          * and Returns a Promise with the Established Session ID
+         * @param IpAddress IP Address or FQDN of the Controller
+         * @param timeout Timeout in Milliseconds for Session Registration
          */
-        async connect(IP_ADDR: string, timeoutSP = 10000): Promise<number | undefined> {
+        async connect(IpAddress: string, timeout = 10000): Promise<number | undefined> {
     
             this.state.session.state = "establishing";
             this.state.TCPState = "establishing";
@@ -42,31 +44,31 @@ export namespace ENIP
              * Connects to the controller using a raw TCP Socket 
              * and register ourselves using RegisterSession Method
              */
-            const connectResult = await new Promise<boolean>((resolve) => {
-                this.socket.connect(EIP_PORT, IP_ADDR);
+            const { connectResult, TCPState } = await new Promise<{ connectResult: boolean, TCPState: ENIPState["TCPState"] }>((resolve) => {
+                this.socket.connect(EIP_PORT, IpAddress);
     
                 this.socket.once("connect", () => {
-                    this.state.TCPState = "established";
-                    resolve(true);
+                    resolve({ connectResult: true, TCPState: "established" });
                 });
     
                 this.socket.once("error", () => () => {
-                    resolve(false)
-                    this.state.TCPState = "unconnected";
+                    resolve({ connectResult: false, TCPState: "unconnected" });
                 });
             });
+
+            this.state.TCPState = TCPState;
     
-            //@ts-ignore
-            if (connectResult === true && this.state.TCPState === "established") {
+            if (connectResult === true && this.state.TCPState === "established")
+            {
                 //Adding Sockets events
                 this.socket.on("data", (data: Buffer) => { this.handleData(data); });
-                this.socket.once("close", (hadError: boolean) => { this.handleClose(hadError); this.events.emit("close") });
+                this.socket.on("close", (hadError: boolean) => { this.handleClose(hadError); });
     
                 this.socket.write(Encapsulation.registerSession());
     
                 const sessionID = await new Promise<number | undefined>((resolve) => {
     
-                    setTimeout(() => resolve(undefined), timeoutSP);
+                    setTimeout(() => resolve(undefined), timeout);
     
                     this.events.on("Session Registered", (sessionid: number) => {
                         this.state.session.state = "established";
@@ -85,17 +87,20 @@ export namespace ENIP
     
                 return sessionID;
             }
-            else {
+            else
+            {
                 this.state.TCPState = "unconnected";
                 this.state.session.state = "unconnected";
                 this.state.error.msg = "Failed to connect to socket";
-                return 0;
+                return undefined;
             }
         }
     
         /**
-         * Writes Ethernet/IP Data to Socket as an Unconnected Message
-         * or a Transport Class 1 Datagram
+         * Writes Ethernet/IP Data to Socket as an Unconnected Message or a Transport Class 1 Datagram
+         * @param data Data to be sent
+         * @param connected If the message should be sent as a connected message
+         * @param timeout Timeout in Milliseconds for the response
          */
         async write(data: Buffer, connected = false, timeout?: number): Promise<boolean> {
             if (this.state.session.state = "established")
@@ -165,6 +170,7 @@ export namespace ENIP
     
         /**
          * Socket data event handler
+         * @param data Data received from the socket
          */
         private handleData(data: Buffer) {
     
@@ -222,10 +228,14 @@ export namespace ENIP
     
         /**
          * Handle socket close
+         * @param _hadError If the socket closed due to an error
          */
         private handleClose(_hadError: boolean) {
             this.state.session.state = "unconnected";
             this.state.TCPState = "unconnected";
+
+            this.events.emit("close");
+
             this.socket.removeAllListeners("data");
             this.socket.removeAllListeners("close");
             this.socket.removeAllListeners("error");
