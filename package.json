@@ -1,6 +1,6 @@
 {
   "name": "enip-ts",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,9 @@
   ],
   "scripts": {
     "dev": "nodemon src/tests/app.ts",
-    "build": "tsc"
+    "dev2": "nodemon src/tests/test.ts",
+    "build": "tsc",
+    "version": "changeset version"
   },
   "repository": {
     "type": "git",
