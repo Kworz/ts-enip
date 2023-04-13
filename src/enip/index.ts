@@ -24,8 +24,12 @@ export namespace ENIP
     
         public events: ENIPEventEmitter;
     
-        constructor() {
+        constructor(timeout?: number)
+        {
             this.socket = new Socket();
+            if(timeout !== undefined)
+                this.socket.setTimeout(timeout);
+            
             this.events = new EventEmitter();
         }
     
@@ -62,7 +66,9 @@ export namespace ENIP
             {
                 //Adding Sockets events
                 this.socket.on("data", (data: Buffer) => { this.handleData(data); });
-                this.socket.on("close", (hadError: boolean) => { this.handleClose(hadError); });
+                this.socket.once("close", (hadError: boolean) => { this.handleClose(hadError); });
+                this.socket.once("timeout", () => { this.handleClose(false); });
+                this.socket.once("error", (error: Error) => { this.handleClose(true); });
     
                 this.socket.write(Encapsulation.registerSession());
     
@@ -237,8 +243,6 @@ export namespace ENIP
             this.events.emit("close");
 
             this.socket.removeAllListeners("data");
-            this.socket.removeAllListeners("close");
-            this.socket.removeAllListeners("error");
         }
     }
 }
