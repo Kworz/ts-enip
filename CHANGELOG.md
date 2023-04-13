@@ -1,5 +1,11 @@
 # enip-ts
 
+## 1.2.2
+
+### Patch Changes
+
+- [#7](https://github.com/Kworz/ts-enip/pull/7) [`085f34a`](https://github.com/Kworz/ts-enip/commit/085f34a0fbd2169fc2d98e1ce555ae27f44ffdc5) Thanks [@Kworz](https://github.com/Kworz)! - feat: added timeout
+
 ## 1.2.1
 
 ### Patch Changes
