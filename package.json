@@ -1,6 +1,6 @@
 {
   "name": "enip-ts",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
   "engines": {
     "node": "^20.x"
@@ -15,52 +15,42 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-
     "./server": {
       "types": "./dist/server/index.d.ts",
       "default": "./dist/server/index.js"
     },
-
     "./CIP": {
       "types": "./dist/enip/cip/index.d.ts",
       "default": "./dist/enip/cip/index.js"
     },
-
     "./CIP/EPath": {
       "types": "./dist/enip/cip/epath/index.d.ts",
       "default": "./dist/enip/cip/epath/index.js"
     },
-
     "./CIP/ConnectionManager": {
       "types": "./dist/enip/cip/connectionManager.d.ts",
       "default": "./dist/enip/cip/connectionManager.js"
     },
-
     "./CIP/DataTypes": {
       "types": "./dist/enip/cip/dataTypes.d.ts",
       "default": "./dist/enip/cip/dataTypes.js"
     },
-
     "./CIP/MessageRouter": {
       "types": "./dist/enip/cip/messageRouter.d.ts",
       "default": "./dist/enip/cip/messageRouter.js"
     },
-
     "./CIP/UnconnectedSend": {
       "types": "./dist/enip/cip/unconnectedSend.d.ts",
       "default": "./dist/enip/cip/unconnectedSend.js"
     },
-
     "./Encapsulation": {
       "types": "./dist/enip/encapsulation/index.d.ts",
       "default": "./dist/enip/encapsulation/index.js"
     },
-
     "./Encapsulation/CPF": {
       "types": "./dist/enip/encapsulation/cpf.d.ts",
       "default": "./dist/enip/encapsulation/cpf.js"
     },
-
     "./Encapsulation/Header": {
       "types": "./dist/enip/encapsulation/header.d.ts",
       "default": "./dist/enup/encapsulation/header.js"
