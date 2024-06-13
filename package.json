@@ -2,44 +2,68 @@
   "name": "enip-ts",
   "version": "1.2.1",
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "engines": {
     "node": "^20.x"
   },
   "files": [
     "/dist"
   ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./server": "./dist/server/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
 
-    "./cip": "./dist/enip/cip/index.js",
-    "./cip/EPath": "./dist/enip/cip/epath/index.js",
-    "./cip/ConnectionManager": "./dist/enip/cip/connectionManager.js",
-    "./cip/DataTypes": "./dist/enip/cip/dataTypes.js",
-    "./cip/MessageRouter": "./dist/enip/cip/messageRouter.js",
-    "./cip/UnconnectedSend": "./dist/enip/cip/unconnectedSend.js",
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
 
-    "./cip/Encapsulation": "./dist/enip/cip/encapsulation/index.js",
-    "./cip/Encapsulation/CPF": "./dist/enip/cip/encapsulation/cpf.js",
-    "./cip/Encapsulation/Header": "./dist/enup/cip/encapsulation/header.js"
-  },
-  "typesVersions": {
-    "*": {
-      ".": ["dist/index.d.ts"],
-      "./server": ["./dist/server/index.js"],
+    "./CIP": {
+      "types": "./dist/enip/cip/index.d.ts",
+      "default": "./dist/enip/cip/index.js"
+    },
 
-      "./cip": ["./dist/enip/cip/index.js"],
-      "./cip/EPath": ["./dist/enip/cip/epath/index.js"],
-      "./cip/ConnectionManager": ["./dist/enip/cip/connectionManager.js"],
-      "./cip/DataTypes": ["./dist/enip/cip/dataTypes.js"],
-      "./cip/MessageRouter": ["./dist/enip/cip/messageRouter.js"],
-      "./cip/UnconnectedSend": ["./dist/enip/cip/unconnectedSend.js"],
-  
-      "./cip/Encapsulation": ["./dist/enip/cip/encapsulation/index.js"],
-      "./cip/Encapsulation/CPF": ["./dist/enip/cip/encapsulation/cpf.js"],
-      "./cip/Encapsulation/Header": ["./dist/enup/cip/encapsulation/header.js"]
+    "./CIP/EPath": {
+      "types": "./dist/enip/cip/epath/index.d.ts",
+      "default": "./dist/enip/cip/epath/index.js"
+    },
+
+    "./CIP/ConnectionManager": {
+      "types": "./dist/enip/cip/connectionManager.d.ts",
+      "default": "./dist/enip/cip/connectionManager.js"
+    },
+
+    "./CIP/DataTypes": {
+      "types": "./dist/enip/cip/dataTypes.d.ts",
+      "default": "./dist/enip/cip/dataTypes.js"
+    },
+
+    "./CIP/MessageRouter": {
+      "types": "./dist/enip/cip/messageRouter.d.ts",
+      "default": "./dist/enip/cip/messageRouter.js"
+    },
+
+    "./CIP/UnconnectedSend": {
+      "types": "./dist/enip/cip/unconnectedSend.d.ts",
+      "default": "./dist/enip/cip/unconnectedSend.js"
+    },
+
+    "./Encapsulation": {
+      "types": "./dist/enip/encapsulation/index.d.ts",
+      "default": "./dist/enip/encapsulation/index.js"
+    },
+
+    "./Encapsulation/CPF": {
+      "types": "./dist/enip/encapsulation/cpf.d.ts",
+      "default": "./dist/enip/encapsulation/cpf.js"
+    },
+
+    "./Encapsulation/Header": {
+      "types": "./dist/enip/encapsulation/header.d.ts",
+      "default": "./dist/enup/encapsulation/header.js"
     }
   },
   "scripts": {

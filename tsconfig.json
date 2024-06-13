@@ -13,6 +13,8 @@
         "sourceRoot": "./src",
         "sourceMap": true,
         "strict": true,
+        "declaration": true,
+        "declarationDir": "./dist",
         "esModuleInterop": true,
         "skipLibCheck": true,
         "outDir": "./dist"
