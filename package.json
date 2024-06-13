@@ -2,14 +2,73 @@
   "name": "enip-ts",
   "version": "1.2.2",
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "engines": {
+    "node": "^20.x"
+  },
   "files": [
     "/dist"
   ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+
+    "./CIP": {
+      "types": "./dist/enip/cip/index.d.ts",
+      "default": "./dist/enip/cip/index.js"
+    },
+
+    "./CIP/EPath": {
+      "types": "./dist/enip/cip/epath/index.d.ts",
+      "default": "./dist/enip/cip/epath/index.js"
+    },
+
+    "./CIP/ConnectionManager": {
+      "types": "./dist/enip/cip/connectionManager.d.ts",
+      "default": "./dist/enip/cip/connectionManager.js"
+    },
+
+    "./CIP/DataTypes": {
+      "types": "./dist/enip/cip/dataTypes.d.ts",
+      "default": "./dist/enip/cip/dataTypes.js"
+    },
+
+    "./CIP/MessageRouter": {
+      "types": "./dist/enip/cip/messageRouter.d.ts",
+      "default": "./dist/enip/cip/messageRouter.js"
+    },
+
+    "./CIP/UnconnectedSend": {
+      "types": "./dist/enip/cip/unconnectedSend.d.ts",
+      "default": "./dist/enip/cip/unconnectedSend.js"
+    },
+
+    "./Encapsulation": {
+      "types": "./dist/enip/encapsulation/index.d.ts",
+      "default": "./dist/enip/encapsulation/index.js"
+    },
+
+    "./Encapsulation/CPF": {
+      "types": "./dist/enip/encapsulation/cpf.d.ts",
+      "default": "./dist/enip/encapsulation/cpf.js"
+    },
+
+    "./Encapsulation/Header": {
+      "types": "./dist/enip/encapsulation/header.d.ts",
+      "default": "./dist/enup/encapsulation/header.js"
+    }
+  },
   "scripts": {
-    "dev": "nodemon src/tests/app.ts",
-    "dev2": "nodemon src/tests/test.ts",
+    "dev": "tsx watch src/tests/app.ts",
+    "dev2": "tsx watch src/tests/test.ts",
     "build": "tsc",
     "version": "changeset version"
   },
@@ -32,12 +91,11 @@
   },
   "homepage": "https://github.com/kworz/ts-enip#readme",
   "devDependencies": {
-    "@changesets/changelog-github": "^0.4.7",
-    "@changesets/cli": "^2.25.2",
-    "@types/node": "^17.0.45",
-    "nodemon": "^2.0.20",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.3"
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.5",
+    "@types/node": "^20.14.2",
+    "tsx": "^4.15.4",
+    "typescript": "^5.4.5"
   },
-  "packageManager": "pnpm@7.13.0"
+  "packageManager": "pnpm@9.1.3"
 }

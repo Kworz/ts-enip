@@ -1,5 +1,6 @@
 import type { EventEmitter } from "stream";
-import type { Encapsulation } from "../encapsulation";
+import type { dataItem } from "../encapsulation/cpf";
+import type { ParsedHeader } from "../encapsulation/header";
 
 export declare interface ENIPEventEmitter extends EventEmitter
 {
@@ -10,11 +11,11 @@ export declare interface ENIPEventEmitter extends EventEmitter
 
 interface ENIPEvents
 {
-    "Session Registration Failed": (error: {code: number, msg: string}) => void;
+    "Session Registration Failed": (error: { code: number, msg: string }) => void;
     "Session Registered": (sessionid: number) => void;
     "Session Unregistered": () => void;
-    "SendRRData Received": (data: Encapsulation.CPF.dataItem[]) => void;
-    "SendUnitData Received": (data: Encapsulation.CPF.dataItem[]) => void;
-    "Unhandled Encapsulated Command Received": (data: Encapsulation.Header.ParsedHeader) => void;
+    "SendRRData Received": (data: dataItem[]) => void;
+    "SendUnitData Received": (data: dataItem[]) => void;
+    "Unhandled Encapsulated Command Received": (data: ParsedHeader) => void;
     "close": () => void;
 }

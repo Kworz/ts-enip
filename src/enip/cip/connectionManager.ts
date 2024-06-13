@@ -1,42 +1,68 @@
-export namespace ConnectionManager {
-    
-    export type UCMMSendTimeout = {
-        time_tick: number,
-        ticks: number
-    }
+export type UCMMSendTimeout = {
+    time_tick: number,
+    ticks: number
+}
 
-    /** lookup for the Redundant Owner (Vol.1 - Table 3-5.8 Field 15) */
-    export enum Owner {
-        Exclusive = 0,
-        Multiple = 1
-    };
+/** lookup for the Redundant Owner (Vol.1 - Table 3-5.8 Field 15) */
+export enum Owner {
+    Exclusive = 0,
+    Multiple = 1
+};
 
-    /** lookup for the Connection Type (Vol.1 - Table 3-5.8 Field 14,13) */
-    export enum ConnectionType {
-        Null = 0,
-        Multicast = 1,
-        PointToPoint = 2,
-        Reserved = 3
-    };
+/** lookup for the Connection Type (Vol.1 - Table 3-5.8 Field 14,13) */
+export enum ConnectionType {
+    Null = 0,
+    Multicast = 1,
+    PointToPoint = 2,
+    Reserved = 3
+};
 
-    /** lookup for the Connection Priority (Vol.1 - Table 3-5.8 Field 11,10) */
-    export enum Priority {
-        Low = 0,
-        High = 1,
-        Scheduled = 2,
-        Urgent = 3
-    };
+/** lookup for the Connection Priority (Vol.1 - Table 3-5.8 Field 11,10) */
+export enum Priority {
+    Low = 0,
+    High = 1,
+    Scheduled = 2,
+    Urgent = 3
+};
 
-    /** lookup for the fixed or variable parameter (Vol.1 - Table 3-5.8 Field 9) */
-    export enum FixedVar {
-        Fixed = 0,
-        Variable = 1
-    };
+/** lookup for the fixed or variable parameter (Vol.1 - Table 3-5.8 Field 9) */
+export enum FixedVar {
+    Fixed = 0,
+    Variable = 1
+};
+
+/** lookup table for Time Tick Value (Vol.1 - Table 3-5.11) @warn not used for now */
+const timePerTick: Record<number, number> = {
+    1: 0
+};
+
+const connSerial = 0x1337;
+
+/**
+ * lookup table for Timeout multiplier (Vol.1 - 3-5.4.1.4)
+ */
+const timeOutMultiplier: Record<number, number> = {
+    4: 0,
+    8: 1,
+    16: 2,
+    32: 3,
+    64: 4,
+    128: 5,
+    256: 6,
+    512: 7
+};
+
+function getRandomInt(max: number): number {
+    return Math.floor(Math.random() * Math.floor(max));
+}
+
+/** Connection manager with static props to manage connection */
+export class ConnectionManager {
 
     /**
      * Build for Object specific connection parameters (Vol.1 - Table 3-5.8)
      */
-    export function build_connectionParameters(owner: Owner, type: ConnectionType, priority: Priority, fixedVar: FixedVar, size: number): number {
+    static build_connectionParameters(owner: Owner, type: ConnectionType, priority: Priority, fixedVar: FixedVar, size: number): number {
         if (owner != 0 && owner != 1) throw new Error("Owner can only be exclusive (0) or multiple (1)");
         if (type > 3 || type < 0) throw new Error("Type can only be Null(0), Multicast(1), PointToPoint(2) or Reserved(3)");
         if (priority > 3 || priority < 0) throw new Error("Priority can only be Low(0), High(1), Scheduled(2) or Urgent(3)");
@@ -46,35 +72,12 @@ export namespace ConnectionManager {
         return owner << 15 | type << 13 | priority << 10 | fixedVar << 9 | size;
     };
 
-    /** lookup table for Time Tick Value (Vol.1 - Table 3-5.11) */
-    const timePerTick: Record<number, number> = {
-        1: 0
-    };
-
-    const connSerial = 0x1337;
-
-    /**
-     * lookup table for Timeout multiplier (Vol.1 - 3-5.4.1.4)
-     */
-    const timeOutMultiplier: Record<number, number> = {
-        4: 0,
-        8: 1,
-        16: 2,
-        32: 3,
-        64: 4,
-        128: 5,
-        256: 6,
-        512: 7
-    };
-
-
     /**
      * Gets the Best Available Timeout Values
-     *
-     * @param {number} timeout - Desired Timeout in ms
-     * @returns {UCMMSendTimeout}
+     * @param timeout - Desired Timeout in ms
+     * @returns Encoded Timeout Values
      */
-    export function generateEncodedTimeout(timeout: number): UCMMSendTimeout {
+    static generateEncodedTimeout(timeout: number): UCMMSendTimeout {
         if (timeout <= 0 || typeof timeout !== "number")
             throw new Error("Timeouts Must be Positive Integers");
 
@@ -100,13 +103,13 @@ export namespace ConnectionManager {
     /**
      * Builds the data portion of a forwardOpen packet
      *
-     * @param {number} [timeOutMs=500] - How many ticks until a timeout is thrown
-     * @param {number} [timeOutMult=32] - A multiplier used for the Timeout 
-     * @param {number} [otRPI=8000] - O->T Request packet interval in milliseconds.
-     * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
-     * @returns {Buffer} data portion of the forwardOpen packet
+     * @param [timeOutMs=500] - How many ticks until a timeout is thrown
+     * @param [timeOutMult=32] - A multiplier used for the Timeout 
+     * @param [otRPI=8000] - O->T Request packet interval in milliseconds.
+     * @param [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
+     * @returns data portion of the forwardOpen packet
      */
-    export function build_forwardOpen(otRPI = 8000, netConnParams = 0x43f4, timeOutMs = 1000, timeOutMult = 32, connectionSerial = 0x4242): Buffer
+    static build_forwardOpen(otRPI = 8000, netConnParams = 0x43f4, timeOutMs = 1000, timeOutMult = 32, connectionSerial = 0x4242): Buffer
     {
         if (timeOutMs <= 900 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and above 500");
         if (!(timeOutMult in timeOutMultiplier) || typeof timeOutMult !== "number") throw new Error("Timeout Multiplier must be a number and a multiple of 4");
@@ -115,7 +118,7 @@ export namespace ConnectionManager {
 
         const actualMultiplier = timeOutMultiplier[timeOutMult];
         const connectionParams = Buffer.alloc(35); // Normal forward open request
-        const timeout = generateEncodedTimeout(timeOutMs);
+        const timeout = this.generateEncodedTimeout(timeOutMs);
         let ptr = 0;
         connectionParams.writeUInt8(timeout.time_tick, ptr); // Priority / TimePerTick
         ptr += 1;
@@ -154,13 +157,13 @@ export namespace ConnectionManager {
      * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
      * @returns {Buffer} data portion of the forwardClose packet
      */
-    export function build_forwardClose(timeOutMs = 1000, vendorOrig = 0x3333, serialOrig = 0x1337, connectionSerial = 0x4242): Buffer{
+    static build_forwardClose(timeOutMs = 1000, vendorOrig = 0x3333, serialOrig = 0x1337, connectionSerial = 0x4242): Buffer{
         if (timeOutMs <= 900 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and at least 500");
         if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
         if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
 
         const connectionParams = Buffer.alloc(10);
-        const timeout = generateEncodedTimeout(timeOutMs);
+        const timeout = this.generateEncodedTimeout(timeOutMs);
         let ptr = 0;
         connectionParams.writeUInt8(timeout.time_tick, ptr); // Priority / TimePerTick
         ptr += 1;
@@ -175,7 +178,5 @@ export namespace ConnectionManager {
         return connectionParams;
     };
 
-    function getRandomInt(max: number): number {
-        return Math.floor(Math.random() * Math.floor(max));
-    }
+
 }
