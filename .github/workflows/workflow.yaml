@@ -22,7 +22,7 @@ jobs:
       - name: 📚 Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 20.x
       
       - name: ⛭ Setup Pnpm github registry
         run: pnpm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN

@@ -4,6 +4,9 @@
   "description": "Typescript implementation of the Ethernet/IP™ protocol.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": "^20.x"
+  },
   "files": [
     "/dist"
   ],
