@@ -1,15 +1,21 @@
+type Path = { class: number, instance: number, attribute: number };
+
 export type CIPPacket = {
     path: Path
     service: number;
     data?: Buffer;
 }
-type Path = { class: number, instance: number, attribute: number };
 
-export class CIP {
+export class CIP
+{
+    /**
+     * Parse a CIP Packet
+     * @param buf buffer received
+     * @returns decoded CIP Packet
+     */
+    static parse(buf: Buffer): CIPPacket {
 
-    public static parseCIP(buf: Buffer): CIPPacket {
-
-        const path = {class: 0, instance: 0, attribute: 0} satisfies Path;
+        const path: Path = { class: 0, instance: 0, attribute: 0 };
 
         const service = buf[0];
         const requestPathSize = buf[1];

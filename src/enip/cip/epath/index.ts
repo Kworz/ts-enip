@@ -1,3 +1,7 @@
+import { EPathData, EPathDataElementTypes, EPathDataTypes } from './data';
+import { EPathLogical, EPathLogicalTypes } from './logical';
+import { EPathPort } from './port';
+
 /**
  * Epath segment Types
  */
@@ -11,3 +15,10 @@ export enum SegmentTypes
     DATATYPE_1= 5 << 5,
     DATATYPE_2= 6 << 6
 }
+
+//Export child modules
+export { 
+    EPathData, EPathDataElementTypes, EPathDataTypes, 
+    EPathLogical, EPathLogicalTypes, 
+    EPathPort
+};

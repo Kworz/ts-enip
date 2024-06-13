@@ -1,7 +1,7 @@
 import { SocketController } from "../enip";
 import { MessageRouter } from "../enip/cip/messageRouter";
-import { ENIPServer } from "../enipServer";
-import type { ENIPDataVector } from "../enipServer/enipClient";
+import { ENIPServer } from "../server";
+import type { ENIPDataVector } from "../server/client";
 import { dataItem } from "../enip/encapsulation/cpf";
 
 const local = true;

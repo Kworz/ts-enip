@@ -1,8 +1,8 @@
-import { ENIP } from "../enip";
+import { ENIPClient } from "../";
 
 const run = async () => {
 
-    const socket = new ENIP.SocketController(120000);
+    const socket = new ENIPClient(120000);
     
     console.log("ts-enip: Connecting to PLC");
     

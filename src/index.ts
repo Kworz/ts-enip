@@ -1,2 +1,3 @@
-import { ENIP } from './enip';
-export { ENIP };
+import { SocketController } from './enip';
+
+export { SocketController as ENIPClient };

@@ -1,7 +1,8 @@
-import { build as buildHeader } from "./header";
-import { build as buildCPF, ItemIDs } from "./cpf";
+import { Header } from "./header";
+import { CPF, ItemIDs } from "./cpf";
 
 export enum Commands {
+    
     NOP = 0x00,
     ListServices = 0x04,
     ListIdentity = 0x63,
@@ -51,86 +52,90 @@ export function parseStatus(status: number): string
     }
 };
 
-/**
- * Creates a register session packet
- * @returns register Session packet
- */
-export function registerSession(sessionID = 0x00): Buffer
-{
-    const cmdBuf = Buffer.alloc(4);
-    cmdBuf.writeUInt16LE(0x01, 0); // Protocol Version (Required to be 1)
-    cmdBuf.writeUInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
-
-    // Build Register Session Buffer and return it
-    return buildHeader(Commands.RegisterSession, sessionID, cmdBuf);
-};
-
-/**
- * Returns an Unregister Session Request Buffer
- * @returns unregister Session packet
- */
-export function unregisterSession(session: number): Buffer {
-    return buildHeader(Commands.UnregisterSession, session);
-};
-
-/**
- * Returns a UCMM Encapsulated Packet Buffer
- * @returns sendRRData packet
- */
-export function sendRRData(session: number, data: Buffer, timeout = 10): Buffer
-{
-    let timeoutBuf = Buffer.alloc(6);
-    timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    timeoutBuf.writeUInt16LE(timeout, 4); // Timeout (sec)
-
-    // Enclose in Common Packet Format
-    let buf = buildCPF([
-        { TypeID: ItemIDs.Null, data: Buffer.from([]) },
-        { TypeID: ItemIDs.UCMM, data: data }
-    ]);
-
-    // Join Timeout Data with
-    buf = Buffer.concat([timeoutBuf, buf]);
-
-    // Build SendRRData Buffer
-    return buildHeader(Commands.SendRRData, session, buf);
-};
-
-/**
- * Returns a Connected Message Datagram (Transport Class 3) String
- * @returns sendUnitData packet
- */
-export function sendUnitData(session: number, data: Buffer, ConnectionID: number, SequenceNumber: number): Buffer
+export class Encapsulation
 {
 
-    let timeoutBuf = Buffer.alloc(6);
-    timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    timeoutBuf.writeUInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+    /**
+     * Creates a register session packet
+     * @returns register Session packet
+     */
+    static registerSession(sessionID = 0x00): Buffer
+    {
+        const cmdBuf = Buffer.alloc(4);
+        cmdBuf.writeUInt16LE(0x01, 0); // Protocol Version (Required to be 1)
+        cmdBuf.writeUInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
 
-    // Enclose in Common Packet Format
-    const seqAddrBuf = Buffer.alloc(4);
-    seqAddrBuf.writeUInt32LE(ConnectionID, 0);
-    const seqNumberBuf = Buffer.alloc(2);
-    seqNumberBuf.writeUInt16LE(SequenceNumber, 0);
-    const ndata = Buffer.concat([
-        seqNumberBuf,
-        data
-    ]);
+        // Build Register Session Buffer and return it
+        return Header.build(Commands.RegisterSession, sessionID, cmdBuf);
+    };
 
-    let buf = buildCPF([
-        {
-            TypeID: ItemIDs.ConnectionBased,
-            data: seqAddrBuf
-        },
-        {
-            TypeID: ItemIDs.ConnectedTransportPacket,
-            data: ndata
-        }
-    ]);
+    /**
+     * Returns an Unregister Session Request Buffer
+     * @returns unregister Session packet
+     */
+    static unregisterSession(session: number): Buffer {
+        return Header.build(Commands.UnregisterSession, session);
+    };
 
-    // Join Timeout Data with
-    buf = Buffer.concat([timeoutBuf, buf]);
+    /**
+     * Returns a UCMM Encapsulated Packet Buffer
+     * @returns sendRRData packet
+     */
+    static sendRRData(session: number, data: Buffer, timeout = 10): Buffer
+    {
+        let timeoutBuf = Buffer.alloc(6);
+        timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+        timeoutBuf.writeUInt16LE(timeout, 4); // Timeout (sec)
 
-    // Build SendRRData Buffer
-    return buildHeader(Commands.SendUnitData, session, buf);
-};
+        // Enclose in Common Packet Format
+        let buf = CPF.build([
+            { TypeID: ItemIDs.Null, data: Buffer.from([]) },
+            { TypeID: ItemIDs.UCMM, data: data }
+        ]);
+
+        // Join Timeout Data with
+        buf = Buffer.concat([timeoutBuf, buf]);
+
+        // Build SendRRData Buffer
+        return Header.build(Commands.SendRRData, session, buf);
+    };
+
+    /**
+     * Returns a Connected Message Datagram (Transport Class 3) String
+     * @returns sendUnitData packet
+     */
+    static sendUnitData(session: number, data: Buffer, ConnectionID: number, SequenceNumber: number): Buffer
+    {
+
+        let timeoutBuf = Buffer.alloc(6);
+        timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+        timeoutBuf.writeUInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+
+        // Enclose in Common Packet Format
+        const seqAddrBuf = Buffer.alloc(4);
+        seqAddrBuf.writeUInt32LE(ConnectionID, 0);
+        const seqNumberBuf = Buffer.alloc(2);
+        seqNumberBuf.writeUInt16LE(SequenceNumber, 0);
+        const ndata = Buffer.concat([
+            seqNumberBuf,
+            data
+        ]);
+
+        let buf = CPF.build([
+            {
+                TypeID: ItemIDs.ConnectionBased,
+                data: seqAddrBuf
+            },
+            {
+                TypeID: ItemIDs.ConnectedTransportPacket,
+                data: ndata
+            }
+        ]);
+
+        // Join Timeout Data with
+        buf = Buffer.concat([timeoutBuf, buf]);
+
+        // Build SendRRData Buffer
+        return Header.build(Commands.SendUnitData, session, buf);
+    };
+}

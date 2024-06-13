@@ -2,9 +2,9 @@ import { Socket } from "net";
 import { EventEmitter } from "stream";
 import type { ENIPEventEmitter } from "./events";
 import type { ENIPState } from "./states";
-import { Commands, registerSession, sendRRData, sendUnitData, unregisterSession } from "./encapsulation";
-import { parse as parseHeader } from "./encapsulation/header";
-import { parse as parseCPF } from "./encapsulation/cpf";
+import { Commands, Encapsulation } from "./encapsulation";
+import { Header } from "./encapsulation/header";
+import { CPF } from "./encapsulation/cpf";
 
 const EIP_PORT = 44818;
 
@@ -74,7 +74,7 @@ export class SocketController {
             this.socket.once("timeout", () => { this.handleClose(false); });
             this.socket.once("error", (error: Error) => { this.handleClose(true); });
 
-            this.socket.write(registerSession());
+            this.socket.write(Encapsulation.registerSession());
 
             const sessionID = await new Promise<number | undefined>((resolve) => {
 
@@ -130,7 +130,7 @@ export class SocketController {
             if (this.state.session.id)
             {
                 //If the packet should be connected, send UnitData otherwise send RRData
-                const packet = (connected) ? sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : sendRRData(this.state.session.id, data, timeout ?? 10);
+                const packet = (connected) ? Encapsulation.sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : Encapsulation.sendRRData(this.state.session.id, data, timeout ?? 10);
                 const write = await new Promise<boolean>((resolve, reject) => {
                     
                     this.socket.write(packet, (err?: Error) => {
@@ -162,7 +162,7 @@ export class SocketController {
      */
     destroy(_error?: Error) {
         if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(unregisterSession(this.state.session.id), (_err?: Error) => {
+            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
                 this.state.session.state = "unconnected";
             });
         }
@@ -174,7 +174,7 @@ export class SocketController {
     close()
     {
         if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(unregisterSession(this.state.session.id));
+            this.socket.write(Encapsulation.unregisterSession(this.state.session.id));
         }
     }
 
@@ -184,7 +184,7 @@ export class SocketController {
      */
     private handleData(data: Buffer) {
 
-        const encapsulatedData = parseHeader(data);
+        const encapsulatedData = Header.parse(data);
         const { statusCode, status, commandCode } = encapsulatedData;
 
         if (statusCode !== 0) {
@@ -218,7 +218,7 @@ export class SocketController {
                     let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf1, 0, 6);
 
-                    const srrd = parseCPF(buf1);
+                    const srrd = CPF.parse(buf1);
                     this.events.emit("SendRRData Received", srrd);
                     break;
                 }
@@ -226,7 +226,7 @@ export class SocketController {
                     let buf2 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf2, 0, 6);
 
-                    const sud = parseCPF(buf2);
+                    const sud = CPF.parse(buf2);
                     this.events.emit("SendUnitData Received", sud);
                     break;
                 }

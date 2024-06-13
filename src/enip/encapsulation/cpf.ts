@@ -16,77 +16,81 @@ export const ItemIDs: Record<string, number> = {
     SequencedAddrItem: 0x8002
 }
 
-/**
- * Checks if the specified command number is a known command
- * @param cmd Command number to check
- * @returns if the command is a known command
- */
-export function isCmd(cmd: number): boolean {       
-    return Object.values(ItemIDs).includes(cmd);
-}
+export class CPF {
 
-/**
- * Builds a Common Packet Formatted Buffer to be
- * Encapsulated.
- *
- * @param dataItems - Array of CPF Data Items
- * @returns CPF Buffer to be Encapsulated
- */
-export function build(dataItems: Array<dataItem>): Buffer 
-{
-    // Write Item Count and Initialize Buffer
-    let buf = Buffer.alloc(2);
-    buf.writeUInt16LE(dataItems.length, 0);
+    /**
+     * Checks if the specified command number is a known command
+     * @param cmd Command number to check
+     * @returns if the command is a known command
+     */
+    static isCmd(cmd: number): boolean
+    {       
+        return Object.values(ItemIDs).includes(cmd);
+    }
 
-    for (let item of dataItems)
+    /**
+     * Builds a Common Packet Formatted Buffer to be
+     * Encapsulated.
+     *
+     * @param dataItems - Array of CPF Data Items
+     * @returns CPF Buffer to be Encapsulated
+     */
+    static build(dataItems: Array<dataItem>): Buffer 
     {
-        const { TypeID, data } = item;
+        // Write Item Count and Initialize Buffer
+        let buf = Buffer.alloc(2);
+        buf.writeUInt16LE(dataItems.length, 0);
 
-        if (!isCmd(TypeID)) throw new Error("Invalid CPF Type ID!");
+        for (let item of dataItems)
+        {
+            const { TypeID, data } = item;
 
-        let buf1 = Buffer.alloc(4);
-        let buf2 = Buffer.from(data);
+            if (!this.isCmd(TypeID)) throw new Error("Invalid CPF Type ID!");
 
-        buf1.writeUInt16LE(TypeID, 0);
-        buf1.writeUInt16LE(buf2.length, 2);
+            let buf1 = Buffer.alloc(4);
+            let buf2 = Buffer.from(data);
 
-        buf = buf2.length > 0 ? Buffer.concat([buf, buf1, buf2]) : Buffer.concat([buf, buf1]);
+            buf1.writeUInt16LE(TypeID, 0);
+            buf1.writeUInt16LE(buf2.length, 2);
+
+            buf = buf2.length > 0 ? Buffer.concat([buf, buf1, buf2]) : Buffer.concat([buf, buf1]);
+        }
+
+        return buf;
     }
 
-    return buf;
-}
+    /**
+     * Parses Incoming Common Packet Formatted Buffer
+     * and returns an Array of Objects.
+     *
+     * @param buf - Common Packet Formatted Data Buffer
+     * @returns Array of Common Packet Data Objects
+     */
+    static parse(buf: Buffer): dataItem[] {
+        const itemCount = buf.readUInt16LE(0);
 
-/**
- * Parses Incoming Common Packet Formatted Buffer
- * and returns an Array of Objects.
- *
- * @param buf - Common Packet Formatted Data Buffer
- * @returns Array of Common Packet Data Objects
- */
-export function parse(buf: Buffer): dataItem[] {
-    const itemCount = buf.readUInt16LE(0);
+        let ptr = 2;
+        let arr = [];
 
-    let ptr = 2;
-    let arr = [];
+        for (let i = 0; i < itemCount; i++) {
+            // Get Type ID
+            const TypeID = buf.readUInt16LE(ptr);
+            ptr += 2;
 
-    for (let i = 0; i < itemCount; i++) {
-        // Get Type ID
-        const TypeID = buf.readUInt16LE(ptr);
-        ptr += 2;
+            // Get Data Length
+            const length = buf.readUInt16LE(ptr);
+            ptr += 2;
 
-        // Get Data Length
-        const length = buf.readUInt16LE(ptr);
-        ptr += 2;
+            // Get Data from Data Buffer
+            const data = Buffer.alloc(length);
+            buf.copy(data, 0, ptr, ptr + length);
 
-        // Get Data from Data Buffer
-        const data = Buffer.alloc(length);
-        buf.copy(data, 0, ptr, ptr + length);
+            // Append Gathered Data Object to Return Array
+            arr.push({ TypeID, length, data });
 
-        // Append Gathered Data Object to Return Array
-        arr.push({ TypeID, length, data });
+            ptr += length;
+        }
 
-        ptr += length;
+        return arr;
     }
-
-    return arr;
 }

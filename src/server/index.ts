@@ -1,6 +1,6 @@
 import { createServer, Server } from "net";
 import { EventEmitter } from "stream";
-import { ENIPClient, ENIPDataVector } from "./enipClient";
+import { Client, ENIPDataVector } from "./client";
 import type { ENIPEventEmitter } from "../enip/events";
 
 const EIP_PORT = 44818;
@@ -9,13 +9,13 @@ const EIP_PORT = 44818;
 export class ENIPServer {
 
     private server: Server;
-    private clients: ENIPClient[] = [];
+    private clients: Client[] = [];
 
     public events: ENIPEventEmitter;
 
     constructor(vector: ENIPDataVector) {
         this.server = createServer((client) => {
-            this.clients.push(new ENIPClient(client, vector));
+            this.clients.push(new Client(client, vector));
             
         });
 

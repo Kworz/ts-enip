@@ -12,18 +12,34 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./MessageRouter": "./dist/enip/cip/messageRouter.js",
-    "./Encapsulation": "./dist/enip/encapsulation.js",
-    "./ENIPServer": "./dist/enipServer/index.js",
-    "./ENIPDataVector": "./dist/enipServer/enipClient.js"
+    "./server": "./dist/server/index.js",
+
+    "./cip": "./dist/enip/cip/index.js",
+    "./cip/EPath": "./dist/enip/cip/epath/index.js",
+    "./cip/ConnectionManager": "./dist/enip/cip/connectionManager.js",
+    "./cip/DataTypes": "./dist/enip/cip/dataTypes.js",
+    "./cip/MessageRouter": "./dist/enip/cip/messageRouter.js",
+    "./cip/UnconnectedSend": "./dist/enip/cip/unconnectedSend.js",
+
+    "./cip/Encapsulation": "./dist/enip/cip/encapsulation/index.js",
+    "./cip/Encapsulation/CPF": "./dist/enip/cip/encapsulation/cpf.js",
+    "./cip/Encapsulation/Header": "./dist/enup/cip/encapsulation/header.js"
   },
   "typesVersions": {
     "*": {
       ".": ["dist/index.d.ts"],
-      "./MessageRouter": ["dist/enip/cip/messageRouter.d.ts"],
-      "./Encapsulation": ["dist/enip/encapsulation.d.ts"],
-      "./ENIPServer": ["dist/enipServer/index.d.ts"],
-      "./ENIPDataVector": ["dist/enipServer/enipClient.d.ts"]
+      "./server": ["./dist/server/index.js"],
+
+      "./cip": ["./dist/enip/cip/index.js"],
+      "./cip/EPath": ["./dist/enip/cip/epath/index.js"],
+      "./cip/ConnectionManager": ["./dist/enip/cip/connectionManager.js"],
+      "./cip/DataTypes": ["./dist/enip/cip/dataTypes.js"],
+      "./cip/MessageRouter": ["./dist/enip/cip/messageRouter.js"],
+      "./cip/UnconnectedSend": ["./dist/enip/cip/unconnectedSend.js"],
+  
+      "./cip/Encapsulation": ["./dist/enip/cip/encapsulation/index.js"],
+      "./cip/Encapsulation/CPF": ["./dist/enip/cip/encapsulation/cpf.js"],
+      "./cip/Encapsulation/Header": ["./dist/enup/cip/encapsulation/header.js"]
     }
   },
   "scripts": {
