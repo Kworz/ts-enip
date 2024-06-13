@@ -1,10 +1,14 @@
-import { EventEmitter } from "stream";
-import { MessageRouter } from "../enip/cip/messageRouter";
-import { CIP, CIPPacket } from "../enip/cip/path";
-import { Encapsulation } from "../enip/encapsulation";
 import type { Socket } from "net";
 import type { ENIPEventEmitter } from "../enip/events";
 import type { ENIPState } from "../enip/states";
+import { EventEmitter } from "stream";
+import { MessageRouter } from "../enip/cip/messageRouter";
+import { CIP, CIPPacket } from "../enip/cip/path";
+import { dataItem } from "../enip/encapsulation/cpf";
+import { sendUnitData, sendRRData, registerSession, unregisterSession } from "../enip/encapsulation";
+import { parse as parseHeader } from "../enip/encapsulation/header";
+import { parse as parseCPF } from "../enip/encapsulation/cpf";
+import { Commands } from "../enip/encapsulation";
 
 export type ENIPDataVector = Record<number, VectorFunction>;
 
@@ -23,8 +27,8 @@ export class ENIPClient {
 
     state: ENIPState = {
         TCPState: "established",
-        session: { id: 0, state: "established"},
-        connection: {id: 0, seq_num: 0, state: "established"},
+        session: { id: 0, state: "established" },
+        connection: { id: 0, seq_num: 0, state: "established" },
         error: { code: 0, msg: "" }
     };
 
@@ -39,28 +43,24 @@ export class ENIPClient {
     }
 
     /** Ignore empty packets */
-    private handlePacket(packets: Encapsulation.CPF.dataItem[])
-    {
-        for(const packet of packets)
-        {
-            if(packet.data.length == 0) continue;
+    private handlePacket(packets: dataItem[]) {
+        for (const packet of packets) {
+            if (packet.data.length == 0) continue;
 
             this.sendReponse(CIP.parseCIP(packet.data))
         }
     }
 
     /** Send a response computed by Vector function */
-    private sendReponse(packet: CIPPacket)
-    {
+    private sendReponse(packet: CIPPacket) {
         const vectorFunction = this.dataVector[packet.service];
 
-        if(vectorFunction === undefined)
+        if (vectorFunction === undefined)
             throw Error("Vector function undefined");
 
         const dataToSend = vectorFunction(packet);
 
-        if(dataToSend === undefined)
-        {
+        if (dataToSend === undefined) {
             // Set service to Reply
             const mask = 0x80;
             packet.service |= mask;
@@ -70,12 +70,11 @@ export class ENIPClient {
             this.write(MR, false, 50);
             return;
         }
-        
+
         // TODO: this should be simplyfied using vector functions
 
-        switch(packet.service)
-        {
-            case 0x0E: {                
+        switch (packet.service) {
+            case 0x0E: {
                 const MR = MessageRouter.build(0x8E, Buffer.from([0x00]), dataToSend);
 
                 this.write(MR, false, 50);
@@ -101,29 +100,26 @@ export class ENIPClient {
         if (this.state.session.state != "established")
             return false;
 
-        if(this.state.session.id === undefined)
+        if (this.state.session.id === undefined)
             return false;
 
-        if (connected === true) 
-        {
-            if (this.state.connection.state === "established") 
-            {
+        if (connected === true) {
+            if (this.state.connection.state === "established") {
                 let { seq_num } = this.state.connection;
                 (seq_num > 0xffff) ? seq_num = 0 : seq_num++;
             }
-            else
-            {
+            else {
                 throw new Error("Connected message request, but no connection established. Forgot forwardOpen?");
             }
         }
 
         //If the packet should be connected, send UnitData otherwise send RRData
-        const packet = (connected) ? 
-            Encapsulation.sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : 
-            Encapsulation.sendRRData(this.state.session.id, data, timeout ?? 10);
+        const packet = (connected) ?
+            sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) :
+            sendRRData(this.state.session.id, data, timeout ?? 10);
 
         const write = await new Promise<boolean>((resolve, reject) => {
-            
+
             this.socket.write(packet, (err?: Error) => {
 
                 //timeout rejection
@@ -132,7 +128,7 @@ export class ENIPClient {
                 resolve(err === undefined ? true : false);
             });
         });
-        
+
         return write;
     }
 
@@ -141,7 +137,7 @@ export class ENIPClient {
      */
     private handleData(data: Buffer) {
 
-        const encapsulatedData = Encapsulation.Header.parse(data);
+        const encapsulatedData = parseHeader(data);
         const { statusCode, status, commandCode } = encapsulatedData;
 
         if (statusCode !== 0) {
@@ -157,36 +153,36 @@ export class ENIPClient {
             this.state.error.msg = '';
 
             switch (commandCode) {
-                case Encapsulation.Commands.RegisterSession: {
+                case Commands.RegisterSession: {
                     this.state.session.state = "established";
                     this.state.session.id = 0x01;
                     this.events.emit("Session Registered", this.state.session.id);
 
-                    this.socket.write(Encapsulation.registerSession(this.state.session.id));
-                    
+                    this.socket.write(registerSession(this.state.session.id));
+
                     break;
                 }
 
-                case Encapsulation.Commands.UnregisterSession: {
+                case Commands.UnregisterSession: {
 
                     this.state.session.state = "unconnected";
                     this.events.emit("Session Unregistered");
                     break;
                 }
 
-                case Encapsulation.Commands.SendRRData: {
+                case Commands.SendRRData: {
                     let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf1, 0, 6);
 
-                    const srrd = Encapsulation.CPF.parse(buf1);
+                    const srrd = parseCPF(buf1);
                     this.events.emit("SendRRData Received", srrd);
                     break;
                 }
-                case Encapsulation.Commands.SendUnitData: {
+                case Commands.SendUnitData: {
                     let buf2 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf2, 0, 6);
 
-                    const sud = Encapsulation.CPF.parse(buf2);
+                    const sud = parseCPF(buf2);
                     this.events.emit("SendUnitData Received", sud);
                     break;
                 }
@@ -204,7 +200,7 @@ export class ENIPClient {
      */
     destroy(_error?: Error) {
         if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
+            this.socket.write(unregisterSession(this.state.session.id), (_err?: Error) => {
                 this.state.session.state = "unconnected";
             });
         }
@@ -213,10 +209,9 @@ export class ENIPClient {
     /**
      * Sends an UnregisterSession command
      */
-    close()
-    {
+    close() {
         if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(Encapsulation.unregisterSession(this.state.session.id));
+            this.socket.write(unregisterSession(this.state.session.id));
         }
     }
 

@@ -1,11 +1,12 @@
 import { MessageRouter } from "./messageRouter";
-import type { ConnectionManager } from "./connectionManager"
+import type { ConnectionManager } from "./connectionManager";
 
+import { Types, build } from "./epath/logical";
 
 const UNCONNECTED_SEND_SERVICE = 0x52;
 const UNCONNECTED_SEND_PATH = Buffer.concat([
-    Epath.logical.build(Epath.logical.Types.ClassID, 0x06),
-    Epath.logical.build(Epath.logical.Types.InstanceID, 1)
+    build(Types.ClassID, 0x06),
+    build(Types.InstanceID, 1)
 ]);
 
 export namespace UnconnectedSend
