@@ -7,9 +7,25 @@
   "files": [
     "/dist"
   ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./MessageRouter": "./dist/enip/cip/messageRouter.js",
+    "./Encapsulation": "./dist/enip/encapsulation.js",
+    "./ENIPServer": "./dist/enipServer/index.js",
+    "./ENIPDataVector": "./dist/enipServer/enipClient.js"
+  },
+  "typesVersions": {
+    "*": {
+      ".": ["dist/index.d.ts"],
+      "./MessageRouter": ["dist/enip/cip/messageRouter.d.ts"],
+      "./Encapsulation": ["dist/enip/encapsulation.d.ts"],
+      "./ENIPServer": ["dist/enipServer/index.d.ts"],
+      "./ENIPDataVector": ["dist/enipServer/enipClient.d.ts"]
+    }
+  },
   "scripts": {
-    "dev": "nodemon src/tests/app.ts",
-    "dev2": "nodemon src/tests/test.ts",
+    "dev": "tsx watch src/tests/app.ts",
+    "dev2": "tsx watch src/tests/test.ts",
     "build": "tsc",
     "version": "changeset version"
   },
@@ -32,12 +48,11 @@
   },
   "homepage": "https://github.com/kworz/ts-enip#readme",
   "devDependencies": {
-    "@changesets/changelog-github": "^0.4.7",
-    "@changesets/cli": "^2.25.2",
-    "@types/node": "^17.0.45",
-    "nodemon": "^2.0.20",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.3"
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.5",
+    "@types/node": "^20.14.2",
+    "tsx": "^4.15.4",
+    "typescript": "^5.4.5"
   },
-  "packageManager": "pnpm@7.13.0"
+  "packageManager": "pnpm@9.1.3"
 }
