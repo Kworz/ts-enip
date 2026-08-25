@@ -14,15 +14,15 @@ jobs:
     name: 🧱 Build & release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: 📚 Install Pnpm
-        uses: pnpm/action-setup@v2.2.2
+        uses: pnpm/action-setup@v4
 
       - name: 📚 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 24.x
       
       - name: ⛭ Setup Pnpm github registry
         run: pnpm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN
