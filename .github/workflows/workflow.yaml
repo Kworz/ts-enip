@@ -13,9 +13,20 @@ jobs:
     if: github.repository == 'kworz/ts-enip' # Disable action on forks
     name: 🧱 Build & release
     runs-on: ubuntu-latest
+
+    # Trusted publishing: npm exchanges this workflow's OIDC identity for a
+    # short-lived credential, so no publish token is stored anywhere.
+    # `contents` and `pull-requests` are what changesets needs to open the
+    # "Version Packages" pull request and tag the release — declaring a
+    # `permissions` block drops every default, so they must be listed too.
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: 📚 Install Pnpm
         uses: pnpm/action-setup@v4
 
@@ -23,24 +34,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
-      
-      - name: ⛭ Setup Pnpm github registry
-        run: pnpm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
+          registry-url: "https://registry.npmjs.org"
+
+      # Trusted publishing needs npm >= 11.5.1 and misbehaves on older ones.
+      # Node 24 currently ships 11.9.0, but pinning to latest keeps this off the
+      # runner image's release cadence.
+      - name: ⛏️ Upgrade npm
+        run: npm install -g npm@latest
+
       - name: 📚 Install Node dependencies
         run: pnpm install
 
       - name: 🧱 Run build scripts on all packages
         run: pnpm run build
 
+      # `pnpm publish` cannot publish this way: pnpm has no OIDC support yet
+      # (pnpm/pnpm#9812 is still open). `changeset publish` shells out to npm,
+      # which does. No NPM_TOKEN anywhere, deliberately — a token present in the
+      # environment takes precedence over OIDC and puts us back on the OTP
+      # prompt that a CI can never answer.
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm publish
+          publish: pnpm changeset publish
           version: pnpm run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
