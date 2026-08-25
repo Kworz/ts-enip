@@ -120,7 +120,7 @@ export class Client {
 
         const write = await new Promise<boolean>((resolve, reject) => {
 
-            this.socket.write(packet, (err?: Error) => {
+            this.socket.write(packet, (err?: Error | null) => {
 
                 //timeout rejection
                 setTimeout(() => reject(false), timeout ?? 10000);
@@ -200,7 +200,7 @@ export class Client {
      */
     destroy(_error?: Error) {
         if (this.state.session.id != 0 && this.state.session.state === "established" && this.state.TCPState !== "unconnected") {
-            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error) => {
+            this.socket.write(Encapsulation.unregisterSession(this.state.session.id), (_err?: Error | null) => {
                 this.state.session.state = "unconnected";
             });
         }
