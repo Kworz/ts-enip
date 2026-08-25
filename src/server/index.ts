@@ -30,11 +30,25 @@ export class ENIPServer {
     async listen(port = EIP_PORT): Promise<boolean> {
 
         return new Promise<boolean>(resolve => {
-            try {
-                this.server.listen(port, () => resolve(true));
-            } catch (ex) {
+            const onError = (err: NodeJS.ErrnoException) => {
+                console.error(`ts-enip server: failed to listen on port ${port}: ${err.code ?? err.message}`);
+                this.server.removeListener("listening", onListening);
                 resolve(false);
-            }
+            };
+            const onListening = () => {
+                this.server.removeListener("error", onError);
+                resolve(true);
+            };
+            this.server.once("error", onError);
+            this.server.once("listening", onListening);
+            this.server.listen(port);
+        });
+    }
+
+    /** Stop accepting new connections. */
+    close(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.server.close(err => err ? reject(err) : resolve());
         });
     }
 }

@@ -1,5 +1,5 @@
 import { Socket } from "net";
-import { EventEmitter } from "stream";
+import { EventEmitter } from "events";
 import type { ENIPEventEmitter } from "./events";
 import type { ENIPState } from "./states";
 import { Commands, Encapsulation } from "./encapsulation";
@@ -7,6 +7,7 @@ import { Header } from "./encapsulation/header";
 import { CPF } from "./encapsulation/cpf";
 
 const EIP_PORT = 44818;
+const TCP_CONNECT_TIMEOUT = 10000;
 
 /**
  * Low Level Ethernet/IP
@@ -49,25 +50,45 @@ export class SocketController {
         this.state.TCPState = "establishing";
 
         /**
-         * Connects to the controller using a raw TCP Socket 
+         * Connects to the controller using a raw TCP Socket
          * and register ourselves using RegisterSession Method
          */
         const { connectResult, TCPState } = await new Promise<{ connectResult: boolean, TCPState: ENIPState["TCPState"] }>((resolve) => {
-            this.socket.connect(this.port, IpAddress);
 
-            this.socket.once("connect", () => {
-                resolve({ connectResult: true, TCPState: "established" });
-            });
+            let settled = false;
+            const settle = (result: { connectResult: boolean, TCPState: ENIPState["TCPState"] }) => {
+                if (settled) return;
+                settled = true;
+                this.socket.removeListener("connect", onConnect);
+                this.socket.removeListener("error", onError);
+                clearTimeout(connectTimer);
+                resolve(result);
+            };
 
-            this.socket.once("error", () => () => {
-                resolve({ connectResult: false, TCPState: "unconnected" });
-            });
+            const onConnect = () => settle({ connectResult: true, TCPState: "established" });
+            const onError = (_err: Error) => settle({ connectResult: false, TCPState: "unconnected" });
+
+            this.socket.once("connect", onConnect);
+            this.socket.once("error", onError);
+
+            const connectTimer = setTimeout(() => {
+                this.socket.destroy();
+                settle({ connectResult: false, TCPState: "unconnected" });
+            }, TCP_CONNECT_TIMEOUT);
+
+            // Disable Happy Eyeballs (Node >=20 default true) which can disrupt
+            // industrial controllers reachable only over IPv4.
+            this.socket.connect({ port: this.port, host: IpAddress, autoSelectFamily: false });
         });
 
         this.state.TCPState = TCPState;
 
         if (connectResult === true && this.state.TCPState === "established")
         {
+            // Enable TCP keepalive so idle ENIP sessions don't get silently dropped
+            // by the controller / intermediate equipment.
+            this.socket.setKeepAlive(true, 5000);
+
             //Adding Sockets events
             this.socket.on("data", (data: Buffer) => { this.handleData(data); });
             this.socket.once("close", (hadError: boolean) => { this.handleClose(hadError); });
@@ -113,7 +134,7 @@ export class SocketController {
      * @param timeout Timeout in Milliseconds for the response
      */
     async write(data: Buffer, connected = false, timeout?: number): Promise<boolean> {
-        if (this.state.session.state = "established")
+        if (this.state.session.state === "established")
         {
             if (connected === true) 
             {
@@ -131,27 +152,31 @@ export class SocketController {
             {
                 //If the packet should be connected, send UnitData otherwise send RRData
                 const packet = (connected) ? Encapsulation.sendUnitData(this.state.session.id, data, this.state.connection.id, this.state.connection.seq_num) : Encapsulation.sendRRData(this.state.session.id, data, timeout ?? 10);
-                const write = await new Promise<boolean>((resolve, reject) => {
-                    
-                    this.socket.write(packet, (err?: Error) => {
+                const write = await new Promise<boolean>((resolve) => {
 
-                        //timeout rejection
-                        setTimeout(() => reject(false), timeout ?? 10000);
-
-                        resolve(err === undefined ? true : false);
+                    this.socket.write(packet, (err?: Error | null) => {
+                        if (err)
+                            console.log("ts-enip: socket.write error:", err.message);
+                        resolve(!err);
                     });
                 });
-                
+
                 return write;
             }
             else
             {
-                console.log("ts-enip: Session not registered")
+                console.log("ts-enip: write() bailed - session.id is", this.state.session.id);
                 return false;
             }
         }
         else
         {
+            console.log(
+                "ts-enip: write() bailed - session.state=",
+                this.state.session.state,
+                "TCPState=", this.state.TCPState,
+                "destroyed=", this.socket.destroyed
+            );
             return false;
         }
     }

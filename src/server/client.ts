@@ -1,7 +1,7 @@
 import type { Socket } from "net";
 import type { ENIPEventEmitter } from "../enip/events";
 import type { ENIPState } from "../enip/states";
-import { EventEmitter } from "stream";
+import { EventEmitter } from "events";
 import { MessageRouter } from "../enip/cip/messageRouter";
 import { CIP, CIPPacket } from "../enip/cip/path";
 import { dataItem } from "../enip/encapsulation/cpf";
