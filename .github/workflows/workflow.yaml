@@ -34,7 +34,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
-          registry-url: "https://registry.npmjs.org"
 
       # Trusted publishing needs npm >= 11.5.1 and misbehaves on older ones.
       # Node 24 currently ships 11.9.0, but pinning to latest keeps this off the
@@ -48,16 +47,23 @@ jobs:
       - name: 🧱 Run build scripts on all packages
         run: pnpm run build
 
-      # `pnpm publish` cannot publish this way: pnpm has no OIDC support yet
-      # (pnpm/pnpm#9812 is still open). `changeset publish` shells out to npm,
-      # which does. No NPM_TOKEN anywhere, deliberately — a token present in the
-      # environment takes precedence over OIDC and puts us back on the OTP
-      # prompt that a CI can never answer.
+      # Publishing goes through npm, and only npm. pnpm cannot do the OIDC
+      # exchange (pnpm/pnpm#9812 is still open), and `changeset publish` cannot
+      # either: it detects pnpm from `packageManager` and appends the
+      # pnpm-only `--git-checks` flag, then runs npm, which rejects it
+      # (EUNKNOWNCONFIG). `npm publish` sidesteps both — this repository holds a
+      # single package, so there is nothing for changesets to orchestrate at
+      # publish time anyway.
+      #
+      # No NPM_TOKEN and no `registry-url` here, deliberately: either one puts a
+      # token in npm's config — `registry-url` writes setup-node's placeholder
+      # `XXXXX-XXXXX-XXXXX-XXXXX` — and a configured token takes precedence over
+      # OIDC, which is how you land back on the OTP prompt a CI cannot answer.
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm changeset publish
+          publish: npm publish
           version: pnpm run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
